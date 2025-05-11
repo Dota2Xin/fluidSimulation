@@ -11,7 +11,7 @@ def createInitialData(length, resolution, nu, dt):
     kz=np.fft.fftfreq(resolution, d=(length/resolution))*2*np.pi
     #numpy array manipulation
     KX, KY, KZ = np.meshgrid(kx, ky, kz, indexing='ij')
-    kSq=np.sqrt(KX**2+KY**2+KZ**2)
+    kSq=KX**2+KY**2+KZ**2
     kSq[0][0][0] = 1e6
 
     k0=(resolution/10.0)*(2*np.pi/(length))
@@ -19,7 +19,7 @@ def createInitialData(length, resolution, nu, dt):
     initialXVel, initialYVel, initialZVel=initializeVelocities(kx,ky,kz,resolution,k0)
 
     #perform forward euler evalutation for dt to get two sets of initialVelocities separated by dt
-    Ax, Ay, Az = primarySimFuncs.calcA(initialXVel, initialYVel, initialZVel, KX, KY, KZ)
+    Ax, Ay, Az = primarySimFuncs.calcA(initialXVel, initialYVel, initialZVel, KX, KY, KZ, resolution)
 
     cPrefactor = ((Ax * KX + Ay * KY + Az * KZ) / kSq)
     Cx = Ax - cPrefactor * KX
@@ -44,11 +44,11 @@ def initializeVelocities(kx,ky,kz, resolution, k0):
     for i in range(fullHalf+1):
         for j in range(fullHalf+1):
             for k in range(fullHalf+1):
-                if i==0 and j==0 and k==0:
+                kVec = np.asarray([kx[i], ky[j], kz[k]])
+                kMag=np.linalg.norm(kVec)
+                if (i==0 and j==0 and k==0) or kMag<k0:
                     initialXVel[i][j][k]=0
                 else:
-                    kVec=np.asarray([kx[i],ky[j],kz[k]])
-
                     #force velocity perpendicular to k (divergence free condition)
                     if i==j==k:
                         e1Vec=np.asarray([kVec[1],-kVec[0],0])
@@ -60,7 +60,7 @@ def initializeVelocities(kx,ky,kz, resolution, k0):
 
                     #draw initial velocities from maxwell-boltzmann like distribution
                     amplitudeVec=np.random.normal(0, k0,3)
-                    amplitude=np.sqrt(np.linalg.norm(amplitudeVec))
+                    amplitude=np.sqrt(np.linalg.norm(amplitudeVec))/1000.0
                     randomPhase1=2*np.pi*np.random.rand()
                     randomPhase2=2*np.pi*np.random.rand()
 

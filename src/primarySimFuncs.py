@@ -55,13 +55,12 @@ def evolveVelocities(prevXVel, prevYVel, prevZVel, currXVel, currYVel, currZVel,
     firstTermY=prevYVel*firstPrefactor
     firstTermZ=prevZVel*firstPrefactor
 
-    Ax, Ay, Az=calcA(currXVel, currYVel, currZVel, KX,KY,KZ)
+    Ax, Ay, Az=calcA(currXVel, currYVel, currZVel, KX,KY,KZ, len(KX))
 
     cPrefactor=((Ax*KX+Ay*KY+Az*KZ)/kSq)
     Cx=Ax-cPrefactor*KX
     Cy=Ay-cPrefactor*KY
     Cz=Az-cPrefactor*KZ
-
     secondTermX=secondPrefactor*Cx
     secondTermY=secondPrefactor*Cy
     secondTermZ=secondPrefactor*Cz
@@ -72,11 +71,12 @@ def evolveVelocities(prevXVel, prevYVel, prevZVel, currXVel, currYVel, currZVel,
 
     return nextVelX, nextVelY, nextVelZ
 
-def calcA(xVel, yVel, zVel, KX,KY,KZ):
+def calcA(xVel, yVel, zVel, KX,KY,KZ, resolution):
     Ax1=calcPseudoSpectral(xVel, xVel, KX)
     Ax2=calcPseudoSpectral(yVel, xVel, KY)
     Ax3=calcPseudoSpectral(zVel, xVel, KZ)
     Ax=Ax1+Ax2+Ax3
+
 
     Ay1 = calcPseudoSpectral(xVel, yVel, KX)
     Ay2 = calcPseudoSpectral(yVel, yVel, KY)
@@ -88,13 +88,19 @@ def calcA(xVel, yVel, zVel, KX,KY,KZ):
     Az3 = calcPseudoSpectral(zVel, zVel, KZ)
     Az = Az1 + Az2 + Az3
 
+    k_cut = (resolution // 2) * 2 / 3
+    mask = (np.abs(KX) > k_cut) | (np.abs(KY) > k_cut) | (np.abs(KZ) > k_cut)
+    # after you compute each A_x, A_y, A_z in Fourier space:
+    Ax[mask] = 0
+    Ay[mask] = 0
+    Az[mask] = 0
     return Ax, Ay, Az
 
 def calcPseudoSpectral(vel1, vel2, k):
     ifft1=np.fft.ifftn(vel1, norm='ortho')
     i=1j
-    kScale=1/k[1][1][1]
-    ifft2=np.fft.ifftn(i*vel2*k*kScale, norm='ortho')
+    #kScale=1/k[1][1][1]
+    ifft2=np.fft.ifftn(i*vel2*k, norm='ortho')
     product=ifft1*ifft2
     result=np.fft.fftn(product, norm='ortho')
     return result
