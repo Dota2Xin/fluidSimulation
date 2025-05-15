@@ -12,7 +12,7 @@ def createInitialData(length, resolution, nu, dt):
     #numpy array manipulation
     KX, KY, KZ = np.meshgrid(kx, ky, kz, indexing='ij')
     kSq=KX**2+KY**2+KZ**2
-    kSq[0][0][0] = 1e6
+    kSq[0][0][0]=1
 
     k0=(resolution/10.0)*(2*np.pi/(length))
     #initialize velocities
@@ -60,7 +60,7 @@ def initializeVelocities(kx,ky,kz, resolution, k0):
 
                     #draw initial velocities from maxwell-boltzmann like distribution
                     amplitudeVec=np.random.normal(0, k0,3)
-                    amplitude=np.sqrt(np.linalg.norm(amplitudeVec))/1000.0
+                    amplitude=np.linalg.norm(amplitudeVec)/500.0
                     randomPhase1=2*np.pi*np.random.rand()
                     randomPhase2=2*np.pi*np.random.rand()
 
